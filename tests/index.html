@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zog.js - The Perfect Component Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f7f7f7;
+            color: #333;
+            padding: 20px;
+        }
+        #app {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1, h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+        }
+        .widget {
+            background: #fcfcfc;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.secondary {
+            background-color: #6c757d;
+        }
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+        strong {
+            color: #007bff;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <h1>My Sweet Pumpkin App</h1>
+    <p>Value from Child Component: <strong>{{ parentCount }}</strong></p>
+    <button @click="resetParent" class="secondary">Reset Parent Counter</button>
+    <hr>
+    
+    <!-- Component Usage -->
+    <counter-widget 
+        :initial-value="10" 
+        @notified="handleNotification"
+        title="Widget created by the Pumpkin Coder">
+    </counter-widget>
+</div>
+
+<script type="module">
+    // 1. Import from our perfect core library and plugin
+    import { createApp, ref } from './zog.js';
+    import { ComponentPlugin } from './zog-component-plugin.js';
+
+    // 2. Create the main application instance
+    const app = createApp(() => {
+        // Use `ref` in parent for consistency and clear reactivity
+        const parentCount = ref(0);
+
+        function handleNotification(eventData) {
+            console.log('Notification received! New value:', eventData);
+            parentCount.value = eventData;
+        }
+
+        function resetParent() {
+            parentCount.value = 0;
+        }
+
+        // Expose state and methods to the template
+        return {
+            parentCount,
+            handleNotification,
+            resetParent
+        };
+    });
+
+    // 3. Use the component plugin
+    const { registerComponent } = app.use(ComponentPlugin);
+
+    // 4. Define our powerful child component
+    registerComponent('counter-widget', {
+        template: `
+            <div class="widget">
+                <h2>{{ title }}</h2>
+                <p>Initial value from parent was: {{ initialValue }}</p>
+                <p>Current count: <strong z-text="count"></strong></p>
+                <button @click="increment">Increment</button>
+                <button @click="decrement">Decrement</button>
+                <button @click="notifyParent" class="secondary">Notify Parent</button>
+            </div>
+        `,
+        // The setup function is the heart of the component's logic
+        setup(props, { emit }) {
+            // `props.initialValue` is passed from parent.
+            // `props.title` is a static prop.
+            
+            const count = ref(props.initialValue || 0);
+
+            // Methods are clean, simple functions
+            const increment = () => count.value++;
+            const decrement = () => count.value--;
+
+            const notifyParent = () => {
+                // Emit event with the current value to the parent
+                emit('notified', count.value);
+            };
+
+            // Return everything the template needs
+            return {
+                title: props.title, // Pass static props to the template
+                count,
+                increment,
+                decrement,
+                notifyParent
+            };
+        }
+    });
+
+    // 5. Mount the application to the DOM
+    app.mount('#app');
+</script>
+
+</body>
+</html>
